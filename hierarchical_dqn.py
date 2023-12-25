@@ -17,14 +17,15 @@ class HierarchicalDqnAgent(object):
     THRESHOLD = 0.01
 
     def __init__(self,
-                 learning_rates=[0.05, 0.00025],
+                 learning_rates=[0.1, 0.00025],
                  state_sizes=[0, 0],
                  subgoals=None,
                  num_subgoals=0,
                  num_primitive_actions=0,
                  meta_controller_state_fn=None,
                  check_subgoal_fn=None,
-                 load = True):
+                 load = True,
+                 weights_root=''):
 
         """Initializes a hierarchical DQN agent.
 
@@ -41,8 +42,8 @@ class HierarchicalDqnAgent(object):
 
         subgoals = np.array(subgoals)
 
-        self.meta_path = "weights/meta/model"
-        self.control_path = "weights/control/model"
+        self.meta_path = os.path.join(weights_root, 'meta', 'model')
+        self.control_path = os.path.join(weights_root, 'control', 'model')
 
         meta, control = None, None
 

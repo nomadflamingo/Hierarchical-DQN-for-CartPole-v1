@@ -4,28 +4,48 @@
 
 import os
 import sys
-import matplotlib
-matplotlib.use('Agg')
+#matplotlib.use('Agg')
 
 #import clustering
 import dqn
 import gym
-from gym.wrappers import Monitor
 import hierarchical_dqn
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 import pickle
+from tqdm import trange
 
-tf.flags.DEFINE_string('agent_type', 'h_dqn', 'RL agent type.')
-tf.flags.DEFINE_string('logdir', 'experiment_logs/', 'Directory of logfile.')
-tf.flags.DEFINE_string('experiment_dir', '', 'Directory of experiment files.')
-tf.flags.DEFINE_string('logfile', 'log.txt', 'Name of the logfile.')
-tf.flags.DEFINE_string('env_name', 'MontezumaRevenge-v0', 'Name of the environment.')
+from datetime import datetime
 
-env_name = ''
+"""
+Parameters for the environment.
+Note that some other parameters like 
+DISCOUNT, REPLAY_MEMORY_SIZE, BATCH_SIZE etc.
+are set in the dqn.py file
+"""
+ENV_NAME = 'CartPole-v1'
+RENDER = False
+LOAD = False
+SUBGOALS = [\
+            [],
+        ]
+AGENT_TYPE = 'h_dqn'
+TESTING = False
 
-FLAGS = tf.flags.FLAGS
+NUM_ITERATIONS = 2000
+NUM_TRAIN_EPISODES = 100
+NUM_EVAL_EPISODES = 100
+
+
+# Setting up directories and log files (note that logs from prev iterations are not cleared)
+curr_time = datetime.now().strftime('%d_%H:%M:%S')
+OUTPUT_FOLDER = os.path.join('outputs', f'{ENV_NAME}_dqn_at_{curr_time}')
+WEIGHTS_FOLDER = os.path.join(OUTPUT_FOLDER, 'weights')
+
+TRAIN_LOG_FILE = os.path.join(OUTPUT_FOLDER, 'train_returns.log')
+EVAL_LOG_FILE = os.path.join(OUTPUT_FOLDER, 'eval_returns.log')
+FIG_FILE = os.path.join(OUTPUT_FOLDER, 'figure.png')
 
 
 def log(logfile, iteration, rewards):
@@ -36,12 +56,13 @@ def log(logfile, iteration, rewards):
         iteration: The current iteration.
         rewards: Array of rewards obtained in the current iteration.
     """
-    log_string = '{} {} {} {}'.format(
-        iteration, np.min(rewards), np.mean(rewards), np.max(rewards))
-    print(log_string)
+    log_string = ''
+    for reward in rewards:
+        s = '{} {}\n'.format(iteration, reward)
+        log_string += s
 
     with open(logfile, 'a') as f:
-        f.write(log_string + '\n')
+        f.write(log_string)
 
 
 def make_environment(env_name):
@@ -53,26 +74,18 @@ def meta_controller_state(state, original_state):
 
     return np.zeros()
 
-subgoals = [\
-            [- 1, 0],
-            [-.7, 0],
-            [-.3, 0],
-            [  0, 0],
-            [ .5, 0]
-        ]
 
 def check_subgoal(state, subgoal_index):
 
-    target = subgoals[subgoal_index]
+    target = SUBGOALS[subgoal_index]
 
-    return (state[0] - target[0]) < 0.01
+    # 
+    #return (state[0] - target[0]) < 0.01
+    return False
 
 
 def make_agent(agent_type, env, load = True):
-    if agent_type == 'dqn':
-        return dqn.DqnAgent(state_dims=[2],
-                            num_actions= env.action_space.n)
-    elif agent_type == 'h_dqn':
+    if agent_type == 'h_dqn':
         meta_controller_state_fn, check_subgoal_fn, num_subgoals = None, check_subgoal, 2
 
         # subgoals = [\
@@ -85,24 +98,24 @@ def make_agent(agent_type, env, load = True):
 
         return hierarchical_dqn.HierarchicalDqnAgent(
             state_sizes= env.observation_space.shape,
-            subgoals=subgoals,
+            subgoals=SUBGOALS,
             num_subgoals=num_subgoals,
             num_primitive_actions= env.action_space.n,
             meta_controller_state_fn=meta_controller_state_fn,
             check_subgoal_fn=check_subgoal_fn,
-            load = load)
+            load = load,
+            weights_root=WEIGHTS_FOLDER)
+    else:
+        raise Exception(f'Agent type {agent_type} is not supported. (DQN was removed due to some bug in the implementation)')
             
 
-def run(env_name='MountainCar-v0',
-        agent_type='dqn',
-        num_iterations=10,
-        num_train_episodes=100,
-        num_eval_episodes=10,
-        logdir=None,
-        experiment_dir=None,
-        logfile=None,
-        testing=False,
-        load_wieghts = True):
+def run(env_name=ENV_NAME,
+        agent_type=AGENT_TYPE,
+        num_iterations=NUM_ITERATIONS,
+        num_train_episodes=NUM_TRAIN_EPISODES,
+        num_eval_episodes=NUM_EVAL_EPISODES,
+        testing=TESTING,
+        load_wieghts=LOAD):
     """Function that executes RL training and evaluation.
 
     Args:
@@ -111,18 +124,9 @@ def run(env_name='MountainCar-v0',
         num_iterations: Number of iterations to train for.
         num_train_episodes: Number of training episodes per iteration.
         num_eval_episodes: Number of evaluation episodes per iteration.
-        logdir: Directory for log file.
-        logfile: File to log the agent's performance over training.
+        testing: Whether to start training the model or to go straight to evaluation
+        load_wieghts: Whether to load the existing model or start with the new one
     """
-    experiment_dir += '_agent_type_' + agent_type
-
-    # experiment_dir = logdir + experiment_dir
-    # logfile = experiment_dir + '/' + logfile
-    #
-    # try:
-    #     os.stat(experiment_dir)
-    # except:
-    #     os.mkdir(experiment_dir)
 
     print(env_name)
     env = make_environment(env_name)
@@ -133,16 +137,38 @@ def run(env_name='MountainCar-v0',
     agent = make_agent(agent_type, env,  load = load_wieghts)
     print('Made agent!')
 
-    eval_rewards = []
+    if not os.path.exists(WEIGHTS_FOLDER):
+        if load_wieghts:
+            raise Exception('No weights folder found, cannot load model')
+        os.makedirs(os.path.join(WEIGHTS_FOLDER, 'control'))
+        os.makedirs(os.path.join(WEIGHTS_FOLDER, 'meta'))
+
+    train_means = []
+    eval_means = []
+
+    plt.ion()
+    fig, ax = plt.subplots(2, sharex=True)
+    fig.suptitle(f'{agent_type}_{env_name}')
+    ax[0].set_ylabel('Reward function returns')
+    ax[1].set_ylabel('Reward function returns')
+    ax[1].set_xlabel('Iteration number')
+    ax[0].set_title('Train returns')
+    line_train, = ax[0].plot(train_means)
+    ax[1].set_title('Eval returns')
+    line_eval, = ax[1].plot(eval_means)
+    plt.show(block=False)
 
     if testing:
         num_iterations = 1
 
     for it in range(num_iterations):
+        iter_train_returns = []
+        iter_eval_returns = []
 
         if not testing:
+            
             # Run train episodes.
-            for train_episode in range(num_train_episodes):
+            for train_episode in trange(num_train_episodes):
                 # Reset the environment.
                 state = env.reset()
                 #state = np.expand_dims(state, axis=0)
@@ -154,11 +180,12 @@ def run(env_name='MountainCar-v0',
                 while not terminal:
                     action = agent.sample(state)
                     # Remove the do-nothing action.
-                    if env_name == 'MountainCar-v0':
-                        if action == 1:
-                            env_action = 2
-                        else:
-                            env_action = action
+                    # if env_name == 'MountainCar-v0':
+                    #     if action == 1:
+                    #         env_action = 2
+                    #     else:
+                    #         env_action = action
+                    env_action = action
 
                     next_state, reward, terminal, _ = env.step(env_action)
                     #next_state = np.expand_dims(next_state, axis=0)
@@ -169,14 +196,14 @@ def run(env_name='MountainCar-v0',
                     episode_reward += reward
                     # Update the state.
                     state = next_state
+                
+                iter_train_returns.append(episode_reward)
 
         if not testing:
-            eval_rewards = []
-
-        agent.save()
+            agent.save()
 
         # Run eval episodes.
-        for eval_episode in range(num_eval_episodes):
+        for eval_episode in trange(num_eval_episodes):
 
             # Reset the environment.
             state = env_test.reset()
@@ -202,17 +229,19 @@ def run(env_name='MountainCar-v0',
                     goal = info[1]
                     heat_map[curr_state][goal] += 1
 
-                # Remove the do-nothing action.
-                if action == 1:
-                    env_action = 2
-                else:
-                    env_action = action
+                # # Remove the do-nothing action.
+                env_action = action
+                # if action == 1:
+                #     env_action = 2
+                # else:
+                #     env_action = action
 
                 next_state, reward, terminal, _ = env_test.step(env_action)
-                env_test.render()
+
+                if RENDER:
+                    env_test.render()
 
                 #next_state = np.expand_dims(next_state, axis=0)
-                # env_test.render()
                 agent.store(state, action, reward, next_state, terminal, eval=True)
                 if reward > 1:
                     reward = 1 # For sake of comparison.
@@ -221,21 +250,32 @@ def run(env_name='MountainCar-v0',
 
                 state = next_state
 
-            eval_rewards.append(episode_reward)
+            iter_eval_returns.append(episode_reward)
 
-        print("%d# Iteration: Mean Eval Score: %.2f" %(it, np.mean(eval_rewards))) 
+        # log all values
+        if not TESTING:
+            log(TRAIN_LOG_FILE, it, iter_train_returns)
+            log(EVAL_LOG_FILE, it, iter_eval_returns)
 
-testing = False
-load = True
+        # update plots data
+        train_means.append(np.mean(iter_train_returns))  # take the last "num_train_episodes" values and get mean for them
+        eval_means.append(np.mean(iter_eval_returns))  # take the last "num_eval_episodes" values and get mean for them
+        line_train.set_data(range(len(train_means)), train_means)
+        line_eval.set_data(range(len(eval_means)), eval_means)
 
-if len(sys.argv) > 1 and sys.argv[1] == "testing":
-    testing = True
+        print("%d# Iteration: Mean Eval Score: %.2f" %(it, eval_means[-1]))
+        
+        # update plots
+        ax[0].relim()
+        ax[0].autoscale_view()
+        ax[1].relim()
+        ax[1].autoscale_view()
+        plt.draw()
+        plt.pause(0.1)
 
-if len(sys.argv) > 1 and sys.argv[1] == "restart":
-    load = False
+        # save the plot
+        plt.savefig(FIG_FILE)
 
-#env_name= "MontezumaRevenge-v0",
-run(agent_type=FLAGS.agent_type, logdir=FLAGS.logdir, experiment_dir=FLAGS.experiment_dir,
-    logfile=FLAGS.logfile, testing = testing, load_wieghts = load)
+run()
 
 
