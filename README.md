@@ -1,7 +1,7 @@
 # Hierarchical-DQN-CartPole-v1
 A repository containing all the code for running Hierarchical-DQN algorithm for a gym classic control CartPole environment.
 
-Forked from https://github.com/fedingo/Hierarchical-DQN/, which hasn't been updated for a long time and took some time to firuge out all the dependencies and fix some bugs.
+Forked from https://github.com/fedingo/Hierarchical-DQN/, which hasn't been updated for a long time and took some time to figure out all the dependencies and fix some bugs.
 
 ## Environment
 Includes the .yml file with the needed conda environment. (tested on linux)
