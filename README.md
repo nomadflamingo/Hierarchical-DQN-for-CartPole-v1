@@ -11,6 +11,7 @@ Essencially the most annoying requirements are:
 * gym==0.23.1
 * tensorflow==1.*
 * protobuf<=3.20.*
+
 Rest should be installed with no problems
 
 Might run for other requirements as well, but this is what I found that works.
