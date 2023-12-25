@@ -1,4 +1,4 @@
-name: dqn-mountaincar-lumi
+name: hierarchical-dqn-cartpole
 channels:
   - defaults
 dependencies:
