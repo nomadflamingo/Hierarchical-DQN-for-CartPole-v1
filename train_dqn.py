@@ -24,7 +24,7 @@ Note that some other parameters like
 DISCOUNT, REPLAY_MEMORY_SIZE, BATCH_SIZE etc.
 are set in the dqn.py file
 """
-ENV_NAME = 'MountainCar-v0'
+ENV_NAME = 'SUMO-RL-1.3-v0'
 RENDER = False
 LOAD = False
 SUBGOALS = {
@@ -35,7 +35,8 @@ SUBGOALS = {
         [  0, 0],
         [ .5, 0]
     ],
-    'CartPole-v1': [[]]
+    'CartPole-v1': [[]],
+    'SUMO-RL-1.3-v0': [[]],
 }
 AGENT_TYPE = 'h_dqn'
 TESTING = False
@@ -54,6 +55,18 @@ TRAIN_LOG_FILE = os.path.join(OUTPUT_FOLDER, 'train_returns.log')
 EVAL_LOG_FILE = os.path.join(OUTPUT_FOLDER, 'eval_returns.log')
 FIG_FILE = os.path.join(OUTPUT_FOLDER, 'figure.png')
 
+gym.register(
+    'SUMO-RL-1.3-v0',
+    entry_point='sumo_rl:SumoEnvironment',
+    kwargs={
+        'net_file': '/home/beimukvo/Documents/work/github_repos_NO_JOKES/sumo-rl/nets/2way-single-intersection/single-intersection.net.xml',
+        'route_file': '/home/beimukvo/Documents/work/github_repos_NO_JOKES/sumo-rl/nets/2way-single-intersection/single-intersection-gen.rou.xml',
+        'use_gui': False,
+        'single_agent': True,
+        'num_seconds': 900,
+        'sumo_warnings': False,
+    },
+)
 
 def log(logfile, iteration, rewards):
     """Function that logs the reward statistics obtained by the agent.
@@ -89,6 +102,8 @@ def check_subgoal(state, subgoal_index):
     if ENV_NAME == 'MountainCar-v0':
         return (state[0] - target[0]) < 0.01
     elif ENV_NAME == 'CartPole-v1':
+        return False
+    elif ENV_NAME == 'SUMO-RL-1.3-v0':
         return False
     else:
         raise Exception(f'check_subgoal function not defined for environment {ENV_NAME}')
@@ -253,8 +268,8 @@ def run(env_name=ENV_NAME,
 
                 #next_state = np.expand_dims(next_state, axis=0)
                 agent.store(state, action, reward, next_state, terminal, eval=True)
-                if reward > 1:
-                    reward = 1 # For sake of comparison.
+                # if reward > 1:
+                #     reward = 1 # For sake of comparison.
 
                 episode_reward += reward
 

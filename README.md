@@ -1,11 +1,11 @@
-# Hierarchical-DQN-Classic-Control
-A repository containing all the code for running Hierarchical-DQN algorithm. Currently only 2 gym classic control environments are supported:
+# Hierarchical-DQN-for-SUMO-RL
+Repository containing code for running Hierarchical-DQN algorithm for SUMO-RL environment (version 1.3.0). Also supports 2 gym classic control environments:
 * CartPole-v1
 * MountainCar-v0
 
 Forked from https://github.com/fedingo/Hierarchical-DQN/, which hasn't been updated for a long time and took some time to figure out all the dependencies and fix some bugs.
 
-## Dependencies
+## Installation and dependencies
 Includes the .yml file with the needed conda environment. (tested on linux)
 
 Essencially the most annoying requirements are:
@@ -13,8 +13,14 @@ Essencially the most annoying requirements are:
 * gym==0.23.1
 * tensorflow==1.*
 * protobuf<=3.20.*
+* sumo-rl==1.3.0
 
-Rest should be installed with no problems
+To install, run:
+```
+conda env create -f conda.yml
+conda activate h-dqn
+pip install sumo-rl==1.3.0 --no-deps
+```
 
 Might run for other requirements as well, but this is what I found that works.
 
