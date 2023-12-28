@@ -9,7 +9,7 @@ Forked from https://github.com/fedingo/Hierarchical-DQN/, which hasn't been upda
 Includes the .yml file with the needed conda environment. (tested on linux)
 
 Essencially the most annoying requirements are:
-* python==3.9.*
+* python==3.7.*
 * gym==0.23.1
 * tensorflow==1.*
 * protobuf<=3.20.*
