@@ -24,12 +24,19 @@ Note that some other parameters like
 DISCOUNT, REPLAY_MEMORY_SIZE, BATCH_SIZE etc.
 are set in the dqn.py file
 """
-ENV_NAME = 'CartPole-v1'
+ENV_NAME = 'MountainCar-v0'
 RENDER = False
 LOAD = False
-SUBGOALS = [\
-            [],
-        ]
+SUBGOALS = {
+    'MountainCar-v0': [\
+        [- 1, 0],
+        [-.7, 0],
+        [-.3, 0],
+        [  0, 0],
+        [ .5, 0]
+    ],
+    'CartPole-v1': [[]]
+}
 AGENT_TYPE = 'h_dqn'
 TESTING = False
 
@@ -40,7 +47,7 @@ NUM_EVAL_EPISODES = 100
 
 # Setting up directories and log files (note that logs from prev iterations are not cleared)
 curr_time = datetime.now().strftime('%d_%H:%M:%S')
-OUTPUT_FOLDER = os.path.join('outputs', f'{ENV_NAME}_dqn_at_{curr_time}')
+OUTPUT_FOLDER = os.path.join('outputs', f'{ENV_NAME}_h_dqn_at_{curr_time}')
 WEIGHTS_FOLDER = os.path.join(OUTPUT_FOLDER, 'weights')
 
 TRAIN_LOG_FILE = os.path.join(OUTPUT_FOLDER, 'train_returns.log')
@@ -77,11 +84,14 @@ def meta_controller_state(state, original_state):
 
 def check_subgoal(state, subgoal_index):
 
-    target = SUBGOALS[subgoal_index]
+    target = SUBGOALS[ENV_NAME][subgoal_index]
 
-    # 
-    #return (state[0] - target[0]) < 0.01
-    return False
+    if ENV_NAME == 'MountainCar-v0':
+        return (state[0] - target[0]) < 0.01
+    elif ENV_NAME == 'CartPole-v1':
+        return False
+    else:
+        raise Exception(f'check_subgoal function not defined for environment {ENV_NAME}')
 
 
 def make_agent(agent_type, env, load = True):
@@ -98,7 +108,7 @@ def make_agent(agent_type, env, load = True):
 
         return hierarchical_dqn.HierarchicalDqnAgent(
             state_sizes= env.observation_space.shape,
-            subgoals=SUBGOALS,
+            subgoals=SUBGOALS[ENV_NAME],
             num_subgoals=num_subgoals,
             num_primitive_actions= env.action_space.n,
             meta_controller_state_fn=meta_controller_state_fn,

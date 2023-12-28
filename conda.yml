@@ -1,4 +1,4 @@
-name: hierarchical-dqn-cartpole
+name: hierarchical-dqn-classic-control
 channels:
   - defaults
 dependencies:
