@@ -9,7 +9,7 @@ Forked from https://github.com/fedingo/Hierarchical-DQN/, which hasn't been upda
 Includes the .yml file with the needed conda environment. (tested on linux)
 
 Essencially the most annoying requirements are:
-* python==3.9.*
+* python==3.7.*
 * gym==0.23.1
 * tensorflow==1.*
 * protobuf<=3.20.*
@@ -30,7 +30,7 @@ For every iteration generates a new folder that has the name of the environment 
 This folder stores the weights for the model, the plot of the reward function graph, and the text file with all the rewards that were used to construct the graph.
 
 ## Notes on the environments
-For CartPole, no subgoals were chosen and the function check_subgoal simply returns False, because I decided not to implement any subgoals in order to not slow down the learning for the algorithm.
+For SUMO-RL and CartPole, no subgoals were chosen and the function check_subgoal simply returns False, because I decided not to implement any subgoals in order to not slow down the learning for the algorithm.
 
 I removed the option to run only DQN agent from the implementation because it wasn't working correctly and I didn't need to fix it for my goals. If you want to run DQN, one option is to just run H-DQN with no subgoals, which I did for CartPole.
 Or just use DQN implementation from stable-baselines3
