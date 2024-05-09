@@ -40,6 +40,7 @@ SUBGOALS = {
 }
 AGENT_TYPE = 'h_dqn'
 TESTING = False
+REWARD_FN = 'average-speed'
 
 NUM_ITERATIONS = 2000
 NUM_TRAIN_EPISODES = 100
@@ -47,8 +48,8 @@ NUM_EVAL_EPISODES = 100
 
 
 # Setting up directories and log files (note that logs from prev iterations are not cleared)
-curr_time = datetime.now().strftime('%d_%H:%M:%S')
-OUTPUT_FOLDER = os.path.join('outputs', f'{ENV_NAME}_h_dqn_at_{curr_time}')
+now = (datetime.now()).strftime('%Y-%m-%dT%H-%M-%S')
+OUTPUT_FOLDER = os.path.join('outputs', f'{now}_{ENV_NAME}_{REWARD_FN} h_dqn')
 WEIGHTS_FOLDER = os.path.join(OUTPUT_FOLDER, 'weights')
 
 TRAIN_LOG_FILE = os.path.join(OUTPUT_FOLDER, 'train_returns.log')
@@ -65,6 +66,7 @@ gym.register(
         'single_agent': True,
         'num_seconds': 900,
         'sumo_warnings': False,
+        'reward_fn': REWARD_FN
     },
 )
 
