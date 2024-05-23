@@ -40,16 +40,17 @@ SUBGOALS = {
 }
 AGENT_TYPE = 'h_dqn'
 TESTING = False
-REWARD_FN = 'average-speed'
+REWARD_FN = sys.argv[1]
+print(f'Reward function: {REWARD_FN}')
 
-NUM_ITERATIONS = 2000
+NUM_ITERATIONS = 99999999999999
 NUM_TRAIN_EPISODES = 100
-NUM_EVAL_EPISODES = 100
+NUM_EVAL_EPISODES = 10
 
 
 # Setting up directories and log files (note that logs from prev iterations are not cleared)
 now = (datetime.now()).strftime('%Y-%m-%dT%H-%M-%S')
-OUTPUT_FOLDER = os.path.join('outputs', f'{now}_{ENV_NAME}_{REWARD_FN} h_dqn')
+OUTPUT_FOLDER = os.path.join('outputs', f'{now}_{ENV_NAME}_{REWARD_FN}_h_dqn')
 WEIGHTS_FOLDER = os.path.join(OUTPUT_FOLDER, 'weights')
 
 TRAIN_LOG_FILE = os.path.join(OUTPUT_FOLDER, 'train_returns.log')
@@ -60,8 +61,8 @@ gym.register(
     'SUMO-RL-1.3-v0',
     entry_point='sumo_rl:SumoEnvironment',
     kwargs={
-        'net_file': '/home/beimukvo/Documents/work/github_repos_NO_JOKES/sumo-rl/nets/2way-single-intersection/single-intersection.net.xml',
-        'route_file': '/home/beimukvo/Documents/work/github_repos_NO_JOKES/sumo-rl/nets/2way-single-intersection/single-intersection-gen.rou.xml',
+        'net_file': 'sumo_files/single-intersection.net.xml',
+        'route_file': 'sumo_files/single-intersection-gen.rou.xml',
         'use_gui': False,
         'single_agent': True,
         'num_seconds': 900,
@@ -175,7 +176,7 @@ def run(env_name=ENV_NAME,
 
     plt.ion()
     fig, ax = plt.subplots(2, sharex=True)
-    fig.suptitle(f'{agent_type}_{env_name}')
+    fig.suptitle(f'{agent_type}_{env_name}_{REWARD_FN}')
     ax[0].set_ylabel('Reward function returns')
     ax[1].set_ylabel('Reward function returns')
     ax[1].set_xlabel('Iteration number')

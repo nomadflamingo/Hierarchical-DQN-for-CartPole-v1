@@ -113,7 +113,7 @@ class HierarchicalDqnAgent(object):
     def subgoal_completed(self, state, subgoal_index):
         # Checks whether the controller has completed the currently specified subgoal.
         if self._check_subgoal_fn is None:
-            return np.sum((state - self._subgoals[subgoal_index])**2) < self.THRESHOLD
+            return False#np.sum((state - self._subgoals[subgoal_index])**2) < self.THRESHOLD
         else:
             return self._check_subgoal_fn(state, subgoal_index)
 
